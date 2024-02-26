@@ -1,0 +1,35 @@
+#!/usr/bin/sh
+
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=01:00:00
+#PBS -l mem=1GB
+
+if [ -z $PBS_ARRAYID ]; then
+  PBS_ARRAYID=1
+fi
+
+window=$WINDOW
+path_cnv_seq_custom=${PATH_CNV_SEQ_CUSTOM}
+path_cnv_seq=${PATH_CNV_SEQ}
+samples_file=${SAMPLES_FILE}
+
+tumour=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $1}' ${samples_file})
+normal=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $2}' ${samples_file})
+tumour_id=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $3}' ${samples_file})
+path_output_dir=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $4}' ${samples_file})
+
+tmpdir=${path_output_dir}/tmp/${tumour_id}
+mkdir -p ${tmpdir}
+$TMPDIR=${tmpdir}
+export TMPDIR=${tmpdir}
+
+log=$path_output_dir/log
+
+exec &> "$log/${tumour_id}.cnvSeq_small_runlog.txt"
+cd $path_output_dir/hits
+perl ${path_cnv_seq}/cnv-seq.pl --ref $normal --test $tumour --window-size $window --genome-size 137547960 --global-normalization
+mv ${path_output_dir}/hits/${tumour_id}*500.*  $path_output_dir/results/w_500
+
+cd $path_output_dir/results/w_500
+bash ${path_cnv_seq_custom}/cnv_seq_process.sh ${tumour_id}*500.*.cnv
+bash ${path_cnv_seq_custom}/cnv2bed.sh ${tumour_id}_500_cnvs.txt

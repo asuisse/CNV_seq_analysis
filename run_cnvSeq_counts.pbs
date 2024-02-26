@@ -1,0 +1,43 @@
+#!/usr/bin/sh
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=1:00:00
+#PBS -l mem=500MB
+
+#source activate R
+#conda activate python2
+
+if [ -z $PBS_ARRAYID ]; then
+  PBS_ARRAYID=1
+fi
+
+path_cnv_seq_custom=${PATH_CNV_SEQ_CUSTOM}
+output_base=${OUTPUT_BASE}
+samples_file=${SAMPLES_FILE}
+
+bamfileid=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $1}' ${samples_file})
+bamfile=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $2}' ${samples_file})
+path_output_dir=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $3}' ${samples_file})
+
+tmpdir=${path_output_dir}/${bamfileid}
+mkdir -p ${tmpdir}
+$TMPDIR=${tmpdir}
+export TMPDIR=${tmpdir}
+
+hits_file=${bamfileid}.hits
+log=${path_output_dir}
+echo $log
+exec &> "$log/${bamfileid}.run_cnvSeq_counts.log"
+echo " Remove dups and qual < 30 " >> "$log/${bamfileid}.run_cnvSeq_counts.log" 2>&1
+# Remove dups and qual < 30
+samtools view $bamfile | perl -lane 'print "$F[2]\t$F[3]"' > $path_output_dir/hits/$hits_file
+
+#perl /data/kdi_prod/project_result/948/01.00/Analysis/Analysis/CNV-Seq/script/filt.pl $path_output_dir/hits/$hits_file
+
+
+perl ${path_cnv_seq_custom}/filt.pl $path_output_dir/hits/$hits_file
+
+rm $path_output_dir/hits/$hits_file
+
+which conda >> "$log/${bamfileid}.run_cnvSeq_counts.log"
+echo $CONDA_PREFIX >> "$log/${bamfileid}.run_cnvSeq_counts.log"
+echo "run_cnvSeq_count done" >> "$log/${bamfileid}.run_cnvSeq_counts.log"
