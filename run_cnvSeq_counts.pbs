@@ -15,9 +15,9 @@ if [ -z "$PATH_CNV_SEQ_CUSTOM" ]; then
   echo "Error: PATH_CNV_SEQ_CUSTOM is not set. Exiting."
   exit 1
 fi
-if [ -z "$OUTPUT_BASE" ]; then
-  echo "Error: OUTPUT_BASE is not set. Exiting."
-  exit 1
+#if [ -z "$OUTPUT_BASE" ]; then
+#  echo "Error: OUTPUT_BASE is not set. Exiting."
+#  exit 1
 fi
 if [ -z "$SAMPLES_FILE" ]; then
   echo "Error: SAMPLES_FILE is not set. Exiting."
