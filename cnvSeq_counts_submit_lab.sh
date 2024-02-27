@@ -4,11 +4,11 @@
 #source activate R
 #conda activate python2
 
-folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/
+folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis
 
 #Tell the program what files to work from. A sample file must be created in the CNV_seq_analysis named "samples_DXXXX"
 samples_file="${folderpath}/samples_D1632-D1612a"
-path_pbs_scripts="${folderpath}/"
+path_pbs_scripts="${folderpath}"
 path_cnv_seq_custom="${folderpath}/cnv_seq_custom"
 base_output_dir="/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/CNV_files/"
 path_bam_files="/data/users/asuisse/Analysis_DrosoWGS/nf-lohcator_nser/results/bam/"
@@ -143,7 +143,7 @@ do
     nlines=$(wc -l < $sample_file)
   else
     echo "File not found: ${sample_file}"
-    continue
+    continue run_cnvSeq_counts.pbs
   fi
 
   lines=$nlines
