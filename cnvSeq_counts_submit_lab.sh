@@ -1,22 +1,13 @@
 #!/usr/bin/sh
-# HUM
-# A512
-# A558
-# A572
-# A370
-# B241
-# A785
-# D050
 
 #export PATH=$PATH:~/miniconda3/condabin/conda
-
 #source activate R
 #conda activate python2
 
 folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/
 
 #Tell the program what files to work from. A sample file must be created in the CNV_seq_analysis named "samples_DXXXX"
-samples_file="${folderpath}/samples_D1389a"
+samples_file="${folderpath}/samples_D1632-D1612a"
 path_pbs_scripts="${folderpath}/"
 path_cnv_seq_custom="${folderpath}/cnv_seq_custom"
 base_output_dir="/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/CNV_files/"
@@ -40,28 +31,45 @@ declare -A samples_outdir
 
 # Now, let's process the data from {samples_file} line by line
 
-echo "entering IFS" #Makes sure the program makes it to this step
-IFS=$'\t' #IFS = Internal Fields Separator. Uses tab as a separator.
-while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT; IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC;
-#This line sets up a while loop that reads lines from the ${samples_file} file and splits each line into fields using the tab character as a delimiter. 
-#It assigns the values in each field to variables like kdiidT, nameT, idT, and so on for both kdiidT and kdiidC. 
-#This line essentially reads two lines at a time, assuming that ${samples_file} contains pairs of tab-delimited lines.
+# Set the Internal Field Separator (IFS) to a tab character
+IFS=$'\t'
+
+# Start the while loop to read two lines at a time from the input file
+while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT && \
+      IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC
 do
-    echo "IFS parameters = " + ${kdiidT} + " #### " + ${kdiidC} #debugging line
-    if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
-      continue #checks kidiid for each line
+    # Skip the loop iteration if kdiidT or kdiidC are empty or equal to "kdi_id"
+    if [[ -z "$kdiidT"  ||  "$kdiidT" == "kdi_id" || -z "$kdiidC"  ||  "$kdiidC" == "kdi_id" ]]; then
+      continue
     fi
 
+    # Construct the path to the output directory and the output file
     path_output_dir="${base_output_dir}${rglbT}/CNV-Seq"
     samples_cf="${path_output_dir}/samples.cnvSeq.counts.${rglbT}"
 
-    if [[ -f ${samples_cf} ]]; then
-      rm -f ${samples_cf}
+    # Remove the output file if it already exists
+    if [[ -f "${samples_cf}" ]]; then
+      rm -f "${samples_cf}"
     fi
 
-done < ${samples_file}
+    # Check the exit status of the rm command
+    if [[ $? -ne 0 ]]; then
+        echo "New file ${samples_file}, nothing to remove"
+        exit 1
+    else
+      echo "Deleted existing output files from previous setup"
+    fi
 
-echo "Deleted existing output files from previous setup"
+done < "${samples_file}"
+
+# Check if the input file could be read successfully
+if [[ $? -ne 0 ]]; then
+    echo "Error: Failed to read file ${samples_file}"
+    exit 1
+else
+    echo "File ${samples_file} read successfully"
+fi
+
 
 # Set the field delimiter to a tab
 IFS=$'\t'
@@ -106,7 +114,7 @@ do
     bamfile="${path_bam_files}${bamfileid}.RG.bam"
     echo "bamfile = " + ${bamfile}
 
-# Add bam file information to samples.cnvSeq.counts.D1389 file
+# Add bam file information to samples.cnvSeq.counts. file
 # ?? is it even the right file format?
     echo -e ${bamfileid}'\t'${bamfile}'\t'${path_output_dir} >> ${path_output_dir}/"samples.cnvSeq.counts."$rglb
 
@@ -121,36 +129,36 @@ echo "${samples_outdir[@]}"
 
 for i in "${!samples_files[@]}"
 do
-  echo "i = " + ${i}
+  echo "i = ${i}"
   rglb="${i}"
 
   sample_file="${samples_files[$i]}"
-  echo "sample file = . ${samples_file[$i]}"
-  #echo ${rglb} ${sample_file}
+  echo "sample file = ${sample_file}"
   output_dir="${samples_outdir[$i]}"
-  echo "sample output dir =  ${output_dir}"
+  echo "sample output dir = ${output_dir}"
 
-  submit_log="${output_dir}"/${rglb}.cnvSeq_counts.submit.log
+  submit_log="${output_dir}/${rglb}.cnvSeq_counts.submit.log"
 
-# Count lines in sample_file and store in nlines
-  nlines=`wc -l < $sample_file`
+  if [[ -f $sample_file ]]; then
+    nlines=$(wc -l < $sample_file)
+  else
+    echo "File not found: ${sample_file}"
+    continue
+  fi
 
-# Convert the value of nlines to an integer and store it in the lines variable
-  lines=`expr $nlines + 0`
-
+  lines=$nlines
 
   if [[ $lines == 1 ]]; then
     echo "entering lines = 1"
-    echo " qsub -V -v SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom} -o $path_output_dir/${rglb}.runlog -j oe -N ${rglb}.cnvSeq.getCounts $path_pbs_scripts/run_cnvSeq_counts.pbs " >> $submit_log
-    CNVSEQ=$( qsub -V -v SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom} -o $path_output_dir/${rglb}.runlog -j oe -N ${rglb}.getCounts $path_pbs_scripts/run_cnvSeq_counts.pbs )
-    echo $CNVSEQ
+    qsub_command="qsub -V -v SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom} -o ${output_dir}/${rglb}.runlog -j oe -N ${rglb}.getCounts $path_pbs_scripts/run_cnvSeq_counts.pbs"
   else
     echo "entering else"
-    echo " qsub -V -t 1-$lines -v SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom} -o $path_output_dir/${rglb}.runlog -j oe -N ${rglb}.cnvSeq.getCounts $path_pbs_scripts/run_cnvSeq_counts.pbs " >> $submit_log
-    echo ${submit_log}
-    CNVSEQ=$( qsub -V -t 1-$lines -v SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom} -o $path_output_dir/${rglb}.runlog -j oe -N ${rglb}.getCounts $path_pbs_scripts/run_cnvSeq_counts.pbs )
-    echo "CVNSEQ = " + $CNVSEQ
-    echo "runlog = " + $path_output_dir/${rglb}.runlog
+    qsub_command="qsub -V -t 1-$lines -v SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom} -o ${output_dir}/${rglb}.runlog -j oe -N ${rglb}.getCounts $path_pbs_scripts/run_cnvSeq_counts.pbs"
   fi
+
+  echo $qsub_command >> $submit_log
+  CNVSEQ=$($qsub_command)
+  echo "CNVSEQ = ${CNVSEQ}"
+  echo "runlog = ${output_dir}/${rglb}.runlog"
 
 done

@@ -6,38 +6,107 @@
 #source activate R
 #conda activate python2
 
-if [ -z $PBS_ARRAYID ]; then
-  PBS_ARRAYID=1
+# Check if the necessary environment variables are set.
+if [ -z "$PBS_ARRAYID" ]; then
+  echo "Error: PBS_ARRAYID is not set. Exiting."
+  exit 1
+fi
+if [ -z "$PATH_CNV_SEQ_CUSTOM" ]; then
+  echo "Error: PATH_CNV_SEQ_CUSTOM is not set. Exiting."
+  exit 1
+fi
+if [ -z "$OUTPUT_BASE" ]; then
+  echo "Error: OUTPUT_BASE is not set. Exiting."
+  exit 1
+fi
+if [ -z "$SAMPLES_FILE" ]; then
+  echo "Error: SAMPLES_FILE is not set. Exiting."
+  exit 1
 fi
 
 path_cnv_seq_custom=${PATH_CNV_SEQ_CUSTOM}
 output_base=${OUTPUT_BASE}
 samples_file=${SAMPLES_FILE}
 
+# Check if the samples file exists.
+if [ ! -f "$samples_file" ]; then
+  echo "Error: Samples file '$samples_file' does not exist. Exiting."
+  exit 1
+fi
+
 bamfileid=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $1}' ${samples_file})
 bamfile=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $2}' ${samples_file})
 path_output_dir=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $3}' ${samples_file})
 
+# Check if the BAM file exists.
+if [ ! -f "$bamfile" ]; then
+  echo "Error: BAM file '$bamfile' does not exist. Exiting."
+  exit 1
+fi
+
+# Print the values of the variables for verification.
+echo "PBS_ARRAYID: $PBS_ARRAYID"
+echo "PATH_CNV_SEQ_CUSTOM: $PATH_CNV_SEQ_CUSTOM"
+echo "OUTPUT_BASE: $OUTPUT_BASE"
+echo "SAMPLES_FILE: $SAMPLES_FILE"
+echo "bamfileid: $bamfileid"
+echo "bamfile: $bamfile"
+echo "path_output_dir: $path_output_dir"
+
+
+# Create a temporary directory for storing intermediate files
 tmpdir=${path_output_dir}/${bamfileid}
 mkdir -p ${tmpdir}
-$TMPDIR=${tmpdir}
+
+# Set the TMPDIR environment variable to the newly created temporary directory
+# This is typically used by programs to store temporary files
 export TMPDIR=${tmpdir}
 
+# Define the name of the file that will store the 'hits' from the SAMtools view command
 hits_file=${bamfileid}.hits
+
+# Define the directory where the log file will be stored
 log=${path_output_dir}
-echo $log
+
+# Print the log directory to the console
+echo "Log directory: $log"
+
+# Redirect all output (stdout and stderr) to a log file
 exec &> "$log/${bamfileid}.run_cnvSeq_counts.log"
+
+# Add a message to the log file indicating that the next step is to remove duplicates and reads with quality < 30
 echo " Remove dups and qual < 30 " >> "$log/${bamfileid}.run_cnvSeq_counts.log" 2>&1
-# Remove dups and qual < 30
+
+# Use SAMtools to view the BAM file, then use Perl to extract the 3rd and 4th fields (chromosome and position) from each line
+# The output is redirected to the 'hits' file in the 'hits' directory under the output directory
 samtools view $bamfile | perl -lane 'print "$F[2]\t$F[3]"' > $path_output_dir/hits/$hits_file
 
 #perl /data/kdi_prod/project_result/948/01.00/Analysis/Analysis/CNV-Seq/script/filt.pl $path_output_dir/hits/$hits_file
 
+# Define the path to the hits file
+hits_file_path="$path_output_dir/hits/$hits_file"
 
-perl ${path_cnv_seq_custom}/filt.pl $path_output_dir/hits/$hits_file
+# Check if the hits file exists
+if [[ -f $hits_file_path ]]; then
+    # Run the Perl script on the hits file
+    perl "${path_cnv_seq_custom}/filt.pl" $hits_file_path
 
-rm $path_output_dir/hits/$hits_file
+    # Remove the hits file
+    rm $hits_file_path
+else
+    echo "Error: $hits_file_path does not exist." >&2
+    exit 1
+fi
 
-which conda >> "$log/${bamfileid}.run_cnvSeq_counts.log"
-echo $CONDA_PREFIX >> "$log/${bamfileid}.run_cnvSeq_counts.log"
-echo "run_cnvSeq_count done" >> "$log/${bamfileid}.run_cnvSeq_counts.log"
+# Define the path to the log file
+log_file_path="$log/${bamfileid}.run_cnvSeq_counts.log"
+
+# Append the path to the `conda` program to the log file
+which conda >> $log_file_path
+
+# Append the value of the `CONDA_PREFIX` environment variable to the log file
+echo $CONDA_PREFIX >> $log_file_path
+
+# Indicate that the script has finished running
+echo "run_cnvSeq_count done" >> $log_file_path
+echo "run_cnvSeq_count done, check out $log_file_path"
