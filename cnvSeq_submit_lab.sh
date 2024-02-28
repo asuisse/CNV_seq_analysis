@@ -4,13 +4,9 @@
 
 #Launch environment "main", with packages python 2.7, R, perl
 
-
-#samples_file=/data/users/nrubanov/DrosoWGS/svn/analyse/data/sample_description/samples_D1389
-#paths_for_nick_pipelines=/data/users/nrubanov/DrosoWGS/svn/analyse/data/scripts/#paths_for_nick_pipelines
-
 folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/
 
-samples_file="${folderpath}/samples_D1389"
+samples_file="${folderpath}/samples_D1632-D1612a"
 path_pbs_scripts="${folderpath}/"
 path_cnv_seq_custom="${folderpath}/cnv_seq_custom"
 base_output_dir="/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/CNV_files/"
@@ -45,73 +41,95 @@ do
     fi
 
     path_output_dir=${base_output_dir}/${rglbT}/CNV-Seq
+    # Check if output directory exists, if not, create it
+    if [ ! -d "${path_output_dir}" ]; then
+      mkdir -p "${path_output_dir}"
+      if [ $? -ne 0 ]; then
+        echo "Failed to create output directory ${path_output_dir}"
+        exit 1
+      fi
+    fi
+
     samples_cf=${path_output_dir}/"samples.cnvSeq."$rglbT
 
+    # if file exists, remove it
     if [ -f ${samples_cf} ]; then
       rm -f ${samples_cf}
-    fi
-done < ${samples_file}
-echo "Deleted existing sample files in CNV-Seq folder"
-
-
-IFS=$'\t'
-while IFS=$'\t' read -r kdiidT nameT idT rglbT kdifolderT sexT typeT bamfileidT rleangthT; IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC;
-do
-    if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
-      continue
+      if [ $? -ne 0 ]; then
+        echo "Failed to remove existing file ${samples_cf}"
+        exit 1
+      fi
     fi
 
-    path_output_dir=${base_output_dir}/${rglbT}/CNV-Seq
     tumour_id=$bamfileidT
     normal_id=$bamfileidC
     tumour_hitfile=$path_output_dir/hits/${tumour_id}.hits.filt
     normal_hitfile=$path_output_dir/hits/${normal_id}.hits.filt
 
-    echo -e ${tumour_hitfile}'\t'${normal_hitfile}'\t'"${tumour_id}"'\t'"${path_output_dir}" >> ${path_output_dir}/"samples.cnvSeq."$rglbT
-    samples_files[$rglbT]=${path_output_dir}/"samples.cnvSeq."$rglbT
+    # Check if hitfiles exist
+    if [ ! -f ${tumour_hitfile} ]; then
+      echo "Tumour hitfile ${tumour_hitfile} does not exist"
+      exit 1
+    fi
+    if [ ! -f ${normal_hitfile} ]; then
+      echo "Normal hitfile ${normal_hitfile} does not exist"
+      exit 1
+    fi
+
+    echo -e ${tumour_hitfile}'\t'${normal_hitfile}'\t'"${tumour_id}"'\t'"${path_output_dir}" >> ${samples_cf}
+    if [ $? -ne 0 ]; then
+      echo "Failed to write to file ${samples_cf}"
+      exit 1
+    fi
+
+    samples_files[$rglbT]=${samples_cf}
     samples_outdir[$rglbT]=$path_output_dir
 
 done < ${samples_file}
+if [ $? -ne 0 ]; then
+  echo "Failed to read from file ${samples_file}"
+  exit 1
+fi
 echo "Set up fits files OK"
 
-echo "entering processing"
+
+echo "Entering processing"
+
+# Loop through all sample files
 for i in "${!samples_files[@]}"
 do
   rglb="$i"
   sample_file="${samples_files[$i]}"
   path_output_dir="${samples_outdir[$i]}"
 
-  nlines=`wc -l < $sample_file`
-  lines=`expr $nlines + 0`
+  # Count number of lines in sample file
+  nlines=$(wc -l < "$sample_file")
+  lines=$((nlines + 0))
 
-  submit_log=${path_output_dir}/log/${rglb}_cnvSeq_submit.log
-  `> $submit_log`
+  submit_log="${path_output_dir}/log/${rglb}_cnvSeq_submit.log"
+  
+  # Clear the log file
+  > "$submit_log"
 
   echo "Processing log : $submit_log"
-  echo "Processing :" >> $submit_log
-  echo ${rglb} >> $submit_log
+  echo "Processing :" >> "$submit_log"
+  echo "${rglb}" >> "$submit_log"
 
-  # printf "Running CNV-Seq with the following paramaters:\ncnv-seq.pl \ \n--ref %s \ \n--test %s \ \n--window-size %s \ \n--genome-size  %s\n" "$normal" "$tumour" "50000" "137547960" >> $submit_log
-  # qsub -V -v TUMOUR=${tumour},NORMAL=${normal},OUTPUT_BASE=$name,WINDOW=50000,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${name}_cnvSeq_big.runlog -j oe -N ${name}.cnvSeq_big $path_pbs_scripts/run_cnvSeq_big.pbs
-  # printf "Running CNV-Seq with the following paramaters:\ncnv-seq.pl \ \n--ref %s \ \n--test %s \ \n--window-size %s \ \n--genome-size  %s\n" "$normal" "$tumour" "10000" "137547960" >> $submit_log  #
-  # qsub -V -v TUMOUR=${tumour},NORMAL=${normal},OUTPUT_BASE=$name,WINDOW=10000,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${name}_cnvSeq_med.runlog -j oe -N ${name}.cnvSeq_med $path_pbs_scripts/run_cnvSeq_med.pbs  #
-  # printf "Running CNV-Seq with the following paramaters:\ncnv-seq.pl \ \n--ref %s \ \n--test %s \ \n--window-size %s \ \n--genome-size  %s\n" "$normal" "$tumour" "500" "137547960" >> $submit_log  #
-  # qsub -V -v TUMOUR=${tumour},NORMAL=${normal},OUTPUT_BASE=$name,WINDOW=500,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${name}_cnvSeq_small.runlog -j oe -N ${name}.cnvSeq_small $path_pbs_scripts/run_cnvSeq_small.pbs
-
+  # Check if lines is 1, if not run the command for each line in the sample file
   if [[ $lines == 1 ]]; then
-    CNVSEQ_big=$( qsub -V -v SAMPLES_FILE=${sample_file},WINDOW=50000,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${rglb}_cnvSeq_big.runlog -j oe -N ${rglb}.cnvSeq_big $path_pbs_scripts/run_cnvSeq_big.pbs )
-    echo $CNVSEQ_big
-    CNVSEQ_med=$( qsub -V -v SAMPLES_FILE=${sample_file},WINDOW=10000,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${rglb}_cnvSeq_med.runlog -j oe -N ${rglb}.cnvSeq_med $path_pbs_scripts/run_cnvSeq_med.pbs )
-    echo $CNVSEQ_med
-    CNVSEQ_small=$( qsub -V -v SAMPLES_FILE=${sample_file},WINDOW=500,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${rglb}_cnvSeq_small.runlog -j oe -N ${rglb}.cnvSeq_small $path_pbs_scripts/run_cnvSeq_small.pbs )
-    echo $CNVSEQ_small
+    CNVSEQ_big=$( qsub -V -v SAMPLES_FILE="${sample_file}",WINDOW=50000,PATH_CNV_SEQ="${path_cnv_seq}",PATH_CNV_SEQ_CUSTOM="${path_cnv_seq_custom}",PATH_OUTPUT_DIR="${path_output_dir}" -o "${path_output_dir}/log/${rglb}_cnvSeq_big.runlog" -j oe -N "${rglb}.cnvSeq_big" "$path_pbs_scripts/run_cnvSeq_big.pbs" ) || { echo "qsub command run_cnvSeq_big.pbs failed"; exit 1; }
+    echo "$CNVSEQ_big"
+    CNVSEQ_med=$( qsub -V -v SAMPLES_FILE="${sample_file}",WINDOW=10000,PATH_CNV_SEQ="${path_cnv_seq}",PATH_CNV_SEQ_CUSTOM="${path_cnv_seq_custom}",PATH_OUTPUT_DIR="${path_output_dir}" -o "${path_output_dir}/log/${rglb}_cnvSeq_med.runlog" -j oe -N "${rglb}.cnvSeq_med" "$path_pbs_scripts/run_cnvSeq_med.pbs" ) || { echo "qsub command run_cnvSeq_med.pbs failed"; exit 1; }
+    echo "$CNVSEQ_med"
+    CNVSEQ_small=$( qsub -V -v SAMPLES_FILE="${sample_file}",WINDOW=500,PATH_CNV_SEQ="${path_cnv_seq}",PATH_CNV_SEQ_CUSTOM="${path_cnv_seq_custom}",PATH_OUTPUT_DIR="${path_output_dir}" -o "${path_output_dir}/log/${rglb}_cnvSeq_small.runlog" -j oe -N "${rglb}.cnvSeq_small" "$path_pbs_scripts/run_cnvSeq_small.pbs" ) || { echo "qsub command run_cnvSeq_small.pbs failed"; exit 1; }
+    echo "$CNVSEQ_small"
   else
-    CNVSEQ_big=$( qsub -t 1-$lines -V -v SAMPLES_FILE=${sample_file},WINDOW=50000,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${rglb}_cnvSeq_big.runlog -j oe -N ${rglb}.cnvSeq_big $path_pbs_scripts/run_cnvSeq_big.pbs )
-    echo $CNVSEQ_big
-    CNVSEQ_med=$( qsub -t 1-$lines -V -v SAMPLES_FILE=${sample_file},WINDOW=10000,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${rglb}_cnvSeq_med.runlog -j oe -N ${rglb}.cnvSeq_med $path_pbs_scripts/run_cnvSeq_med.pbs )
-    echo $CNVSEQ_med
-    CNVSEQ_small=$( qsub -t 1-$lines -V -v SAMPLES_FILE=${sample_file},WINDOW=500,PATH_CNV_SEQ=${path_cnv_seq},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom},PATH_OUTPUT_DIR=${path_output_dir} -o $path_output_dir/log/${rglb}_cnvSeq_small.runlog -j oe -N ${rglb}.cnvSeq_small $path_pbs_scripts/run_cnvSeq_small.pbs )
-    echo $CNVSEQ_small
+    CNVSEQ_big=$( qsub -t 1-"$lines" -V -v SAMPLES_FILE="${sample_file}",WINDOW=50000,PATH_CNV_SEQ="${path_cnv_seq}",PATH_CNV_SEQ_CUSTOM="${path_cnv_seq_custom}",PATH_OUTPUT_DIR="${path_output_dir}" -o "${path_output_dir}/log/${rglb}_cnvSeq_big.runlog" -j oe -N "${rglb}.cnvSeq_big" "$path_pbs_scripts/run_cnvSeq_big.pbs" ) || { echo "qsub command run_cnvSeq_big.pbs failed"; exit 1; }
+    echo "$CNVSEQ_big"
+    CNVSEQ_med=$( qsub -t 1-"$lines" -V -v SAMPLES_FILE="${sample_file}",WINDOW=10000,PATH_CNV_SEQ="${path_cnv_seq}",PATH_CNV_SEQ_CUSTOM="${path_cnv_seq_custom}",PATH_OUTPUT_DIR="${path_output_dir}" -o "${path_output_dir}/log/${rglb}_cnvSeq_med.runlog" -j oe -N "${rglb}.cnvSeq_med" "$path_pbs_scripts/run_cnvSeq_med.pbs" ) || { echo "qsub command run_cnvSeq_med.pbs failed"; exit 1; }
+    echo "$CNVSEQ_med"
+    CNVSEQ_small=$( qsub -t 1-"$lines" -V -v SAMPLES_FILE="${sample_file}",WINDOW=500,PATH_CNV_SEQ="${path_cnv_seq}",PATH_CNV_SEQ_CUSTOM="${path_cnv_seq_custom}",PATH_OUTPUT_DIR="${path_output_dir}" -o "${path_output_dir}/log/${rglb}_cnvSeq_small.runlog" -j oe -N "${rglb}.cnvSeq_small" "$path_pbs_scripts/run_cnvSeq_small.pbs" ) || { echo "qsub command run_cnvSeq_small.pbs failed"; exit 1; }
+    echo "$CNVSEQ_small"
   fi
 
 done
