@@ -93,6 +93,7 @@ if [[ -f $hits_file_path ]]; then
 
     # Remove the hits file
     rm $hits_file_path
+    echo "${hits_file_path}.filt file created"
 else
     echo "Error: $hits_file_path does not exist." >&2
     exit 1
@@ -109,4 +110,4 @@ echo $CONDA_PREFIX >> $log_file_path
 
 # Indicate that the script has finished running
 echo "run_cnvSeq_count done" >> $log_file_path
-echo "run_cnvSeq_count done, check out $log_file_path"
+echo "run_cnvSeq_count done, check out files in $path_output_dir/hits/"
