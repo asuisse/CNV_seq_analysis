@@ -50,14 +50,10 @@ do
     # Remove the output file if it already exists
     if [[ -f "${samples_cf}" ]]; then
       rm -f "${samples_cf}"
-    fi
-
-    # Check the exit status of the rm command
-    if [[ $? -ne 0 ]]; then
-        echo "New file ${samples_file}, nothing to remove"
-        exit 1
+      echo "Deleted existing output files from previous setup for ${kdiidT}"
     else
-      echo "Deleted existing output files from previous setup"
+      echo "New file ${samples_cf}, nothing to remove"
+      exit 1
     fi
 
 done < "${samples_file}"
@@ -87,7 +83,6 @@ do
     path_output_dir="${base_output_dir}${rglb}/CNV-Seq"
 
     mkdir -p ${path_output_dir}
-    log=$path_output_dir
 
 # Create subdirectories if they don't exist
     if [[ ! -d $path_output_dir/hits ]]; then
@@ -116,7 +111,7 @@ do
 
 # Add bam file information to samples.cnvSeq.counts. file
 # ?? is it even the right file format?
-    echo -e ${bamfileid}'\t'${bamfile}'\t'${path_output_dir} >> ${path_output_dir}/"samples.cnvSeq.counts."$rglb
+    echo -e ${bamfileid}'\t'${bamfile}'\t'${path_output_dir} > ${path_output_dir}/"samples.cnvSeq.counts."$rglb
 
     samples_files[$rglb]=${path_output_dir}/"samples.cnvSeq.counts."$rglb
     samples_outdir[$rglb]=${path_output_dir}
@@ -143,7 +138,7 @@ do
     nlines=$(wc -l < $sample_file)
   else
     echo "File not found: ${sample_file}"
-    continue run_cnvSeq_counts.pbs
+    continue
   fi
 
   lines=$nlines
@@ -152,10 +147,10 @@ if [[ $lines == 1 ]]; then
  echo "entering lines = 1"
  qsub_command=("qsub" "-V" "-v" "SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom}" "-o" "${output_dir}/${rglb}.runlog" "-j" "oe" "-N" "${rglb}.getCounts" "$path_pbs_scripts/run_cnvSeq_counts.pbs")
 else
- echo "entering else"
+ echo "entering lines =/= 1"
  qsub_command=("qsub" "-V" "-t" "1-$lines" "-v" "SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom}" "-o" "${output_dir}/${rglb}.runlog" "-j" "oe" "-N" "${rglb}.getCounts" "$path_pbs_scripts/run_cnvSeq_counts.pbs")
 fi
-echo "${qsub_command[@]}" >> $submit_log
+echo "${qsub_command[@]}" > $submit_log
 CNVSEQ=$("${qsub_command[@]}")
 echo "CNVSEQ = ${CNVSEQ}"
 echo "runlog = ${output_dir}/${rglb}.runlog"
