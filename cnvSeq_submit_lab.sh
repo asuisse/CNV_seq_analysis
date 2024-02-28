@@ -4,13 +4,13 @@
 
 #Launch environment "main", with packages python 2.7, R, perl
 
-folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/
+folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis
 
 samples_file="${folderpath}/samples_D1632-D1612a"
 path_pbs_scripts="${folderpath}/"
 path_cnv_seq_custom="${folderpath}/cnv_seq_custom"
-base_output_dir="/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/CNV_files/"
-path_bam_files="/data/users/asuisse/Analysis_DrosoWGS/nf-lohcator_nser/results/bam/"
+base_output_dir="/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis/CNV_files"
+path_bam_files="/data/users/asuisse/Analysis_DrosoWGS/nf-lohcator_nser/results/bam"
 path_cnv_seq="${folderpath}/cnv-seq"
 
 #declare -A paths_variables
