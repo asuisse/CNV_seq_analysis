@@ -4,32 +4,42 @@
 #PBS -l walltime=01:00:00
 #PBS -l mem=1GB
 
+# Check if PBS_ARRAYID is set, if not set it to 1
 if [ -z $PBS_ARRAYID ]; then
   PBS_ARRAYID=1
 fi
 
+# Set various variables
 window=$WINDOW
 path_cnv_seq_custom=${PATH_CNV_SEQ_CUSTOM}
 path_cnv_seq=${PATH_CNV_SEQ}
 samples_file=${SAMPLES_FILE}
 
+# Extract sample information from the samples file
 tumour=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $1}' ${samples_file})
 normal=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $2}' ${samples_file})
 tumour_id=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $3}' ${samples_file})
 path_output_dir=$(awk -F"\t" -v i=${PBS_ARRAYID} 'NR==i{print $4}' ${samples_file})
 
+# Create a temporary directory for the current job
 tmpdir=${path_output_dir}/tmp/${tumour_id}
-mkdir -p ${tmpdir}
-$TMPDIR=${tmpdir}
+mkdir -p ${tmpdir} || { echo "Failed to create tmpdir"; exit 1; }
 export TMPDIR=${tmpdir}
 
+# Set the log file path
 log=$path_output_dir/log
 
+# Redirect stdout and stderr to a log file
 exec &> "$log/${tumour_id}.cnvSeq_big_runlog.txt"
-cd $path_output_dir/hits
-perl ${path_cnv_seq}/cnv-seq.pl --ref $normal --test $tumour --window-size $window --genome-size 137547960 --log2 0.3 --global-normalization
-mv ${path_output_dir}/hits/${tumour_id}*50000.*  $path_output_dir/results/w_50000
 
-cd $path_output_dir/results/w_50000
-bash ${path_cnv_seq_custom}/cnv_seq_process.sh ${tumour_id}*50000.*.cnv
-bash ${path_cnv_seq_custom}/cnv2bed.sh ${tumour_id}_50000_cnvs.txt
+# Run the cnv-seq.pl script
+cd $path_output_dir/hits || { echo "Failed to change to hits directory"; exit 1; }
+perl ${path_cnv_seq}/cnv-seq.pl --ref $normal --test $tumour --window-size $window --genome-size 137547960 --log2 0.3 --global-normalization || { echo "cnv-seq.pl failed for sample ${tumour_id}"; exit 1; }
+
+# Move the output files to the results directory
+mv ${path_output_dir}/hits/${tumour_id}*50000.*  $path_output_dir/results/w_50000 || { echo "Failed to move output files for sample ${tumour_id}"; exit 1; }
+
+# Run the cnv_seq_process.sh script and the cnv2bed.sh script
+cd $path_output_dir/results/w_50000 || { echo "Failed to change to results directory"; exit 1; }
+bash ${path_cnv_seq_custom}/cnv_seq_process.sh ${tumour_id}*50000.*.cnv || { echo "cnv_seq_process.sh failedf or sample ${tumour_id}"; exit 1; }
+bash ${path_cnv_seq_custom}/cnv2bed.sh ${tumour_id}_50000_cnvs.txt || { echo "cnv2bed.sh failed for sample ${tumour_id}"; exit 1; }
