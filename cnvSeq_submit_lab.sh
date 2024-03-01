@@ -68,54 +68,63 @@ done < ${samples_file}
 
 IFS=$'\t'
 
-while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT; do
-    if IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC; then
+while true; do
+    if ! IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT; then
+        echo "End of file or error reading tumour line"
+        break
+    fi
+    if ! IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC; then
+        echo "End of file or error reading normal line"
+        break
+    fi
 
-
-      # Skip the loop iteration if kdiidT or kdiidC are empty or equal to "kdi_id"
-      if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
+    # Skip the loop iteration if kdiidT or kdiidC are empty or equal to "kdi_id"
+    if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
       continue
-      fi
+    fi
 
-      path_output_dir=${base_output_dir}/${rglbT}/CNV-Seq
-      samples_cf=${path_output_dir}/"samples.cnvSeq."$rglbT
+    # Break the loop if we've reached the end of the file
+    if [ -z "$kdiidT" ] && [ -z "$kdiidC" ]; then
+        break
+    fi
+   
+    path_output_dir=${base_output_dir}/${rglbT}/CNV-Seq
+    samples_cf=${path_output_dir}/"samples.cnvSeq."$rglbT
 
-      tumour_id=$bamfileidT
-      normal_id=$bamfileidC
-      tumour_hitfile=$path_output_dir/hits/${tumour_id}.hits.filt
-      normal_hitfile=$path_output_dir/hits/${normal_id}.hits.filt
+    tumour_id=$bamfileidT
+    normal_id=$bamfileidC
+    tumour_hitfile=$path_output_dir/hits/${tumour_id}.hits.filt
+    normal_hitfile=$path_output_dir/hits/${normal_id}.hits.filt
 
-      # Check if hitfiles exist
-      if [ ! -f ${tumour_hitfile} ]; then
-        echo "Tumour hitfile ${tumour_hitfile} does not exist"
-        exit 1
-      fi
-      if [ ! -f ${normal_hitfile} ]; then
+    # Check if hitfiles exist
+    if [ ! -f ${tumour_hitfile} ]; then
+      echo "Tumour hitfile ${tumour_hitfile} does not exist"
+      exit 1
+    fi
+    if [ ! -f ${normal_hitfile} ]; then
       echo "Normal hitfile ${normal_hitfile} does not exist"
       exit 1
-      fi
-
-      echo -e ${tumour_hitfile}'\t'${normal_hitfile}'\t'"${tumour_id}"'\t'"${path_output_dir}" >> ${samples_cf}
-      if [ $? -ne 0 ]; then
-        echo "Failed to write to file ${samples_cf}"
-        exit 1
-      fi
-
-      echo "kdiidT: $kdiidT"
-      echo "kdiidC: $kdiidC"
-      echo "rglbT: $rglbT"
-  
-      samples_file_array[$rglbT]=${samples_cf}
-      samples_outdir[$rglbT]=$path_output_dir
-      echo "samples_cf file ${samples_cf}"
-
-      for i in "${!samples_file_array[@]}"; do
-       echo "Name: $i"
-       echo "Value: ${samples_file_array[$i]}"
-      done
-    else
-        echo "End of file reached or error reading normal line"
     fi
+
+    echo -e ${tumour_hitfile}'\t'${normal_hitfile}'\t'"${tumour_id}"'\t'"${path_output_dir}" >> ${samples_cf}
+    if [ $? -ne 0 ]; then
+      echo "Failed to write to file ${samples_cf}"
+      exit 1
+    fi
+
+    echo "kdiidT: $kdiidT"
+    echo "kdiidC: $kdiidC"
+    echo "rglbT: $rglbT"
+  
+    samples_file_array[$rglbT]=${samples_cf}
+    samples_outdir[$rglbT]=$path_output_dir
+    echo "samples_cf file ${samples_cf}"
+
+  for i in "${!samples_file_array[@]}"; do
+    echo "Name: $i"
+    echo "Value: ${samples_file_array[$i]}"
+  done
+
 done < ${samples_file}
 
 # Check if the input file could be read successfully
