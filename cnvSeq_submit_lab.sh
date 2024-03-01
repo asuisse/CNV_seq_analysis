@@ -33,30 +33,22 @@ declare -A samples_outdir
 #log=$path_output_dir
 
 echo "Entering IFS"
-IFS=$'\t'
-while IFS=$'\t' read -r kdiidT nameT idT rglbT kdifolderT sexT typeT bamfileidT rleangthT; IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC;
-do
+while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT && \
+      IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC
+do    
+    # Skip the loop iteration if kdiidT or kdiidC are empty or equal to "kdi_id"
     if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
       continue
     fi
 
     path_output_dir=${base_output_dir}/${rglbT}/CNV-Seq
-    # Check if output directory exists, if not, create it
-    if [ ! -d "${path_output_dir}" ]; then
-      mkdir -p "${path_output_dir}"
-      if [ $? -ne 0 ]; then
-        echo "Failed to create output directory ${path_output_dir}"
-        exit 1
-      fi
-    fi
-
     samples_cf=${path_output_dir}/"samples.cnvSeq."$rglbT
 
     # if file exists, remove it
     if [ -f ${samples_cf} ]; then
       rm -f ${samples_cf}
       if [ $? -ne 0 ]; then
-        echo "Failed to remove existing file ${samples_cf}"
+        echo "${samples_cf} non-existant"
         exit 1
       fi
     fi
@@ -86,6 +78,8 @@ do
     samples_outdir[$rglbT]=$path_output_dir
 
 done < ${samples_file}
+
+# Check if the input file could be read successfully
 if [ $? -ne 0 ]; then
   echo "Failed to read from file ${samples_file}"
   exit 1
