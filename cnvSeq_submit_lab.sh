@@ -14,7 +14,7 @@ path_bam_files="/data/users/asuisse/Analysis_DrosoWGS/nf-lohcator_nser/results/b
 path_cnv_seq="${folderpath}/cnv-seq"
 
 #declare -A paths_variables
-declare -A samples_files
+declare -A samples_file_array
 declare -A samples_outdir
 
 
@@ -34,13 +34,23 @@ declare -A samples_outdir
 #file_name_conversion=${paths_variables["file_name_conversion"]}
 #log=$path_output_dir
 
+# Print the contents of the samples_file
+echo "Contents of samples_file:"
+cat ${samples_file}
+
 # Set the Internal Field Separator (IFS) to a tab character
 IFS=$'\t'
 
-echo "Entering IFS"
-while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT && \
-      IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC
-do    
+while true; do
+    if ! IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT; then
+        echo "End of file or error reading tumour line"
+        break
+    fi
+    if ! IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC; then
+        echo "End of file or error reading normal line"
+        break
+    fi
+       
     # Skip the loop iteration if kdiidT or kdiidC are empty or equal to "kdi_id"
     if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
       continue
@@ -79,16 +89,20 @@ do
       exit 1
     fi
 
-    samples_files[$rglbT]=${samples_cf}
+    echo "kdiidT: $kdiidT"
+    echo "kdiidC: $kdiidC"
+    echo "rglbT: $rglbT"
+  
+    samples_file_array[$rglbT]=${samples_cf}
     samples_outdir[$rglbT]=$path_output_dir
     echo $samples_cf
 
-done < ${samples_file}
-
-for i in "${!samples_files[@]}"; do
+  for i in "${!samples_file_array[@]}"; do
     echo "Name: $i"
-    echo "Value: ${samples_files[$i]}"
-done
+    echo "Value: ${samples_file_array[$i]}"
+  done
+
+done < ${samples_file}
 
 # Check if the input file could be read successfully
 if [ $? -ne 0 ]; then
@@ -101,10 +115,10 @@ echo "Set up fits files OK"
 echo "Entering processing"
 
 # Loop through all sample files
-for i in "${!samples_files[@]}"
+for i in "${!samples_file_array[@]}"
 do
   rglb="$i"
-  sample_file="${samples_files[$i]}"
+  sample_file="${samples_file_array[$i]}"
   path_output_dir="${samples_outdir[$i]}"
 
   # Count number of lines in sample file
