@@ -119,6 +119,9 @@ echo "samples_file_array array and samples_outdir array"
 echo "${samples_file_array[@]}"
 echo "${samples_outdir[@]}"
 
+echo "Content of samples_file_array"
+declare -p $samples_file_array
+
 # Loop through all sample files
 for i in "${!samples_file_array[@]}"
 do
@@ -127,7 +130,7 @@ do
   sample_file="${samples_file_array[$i]}"
   echo "sample file = ${sample_file}"
   output_dir="${samples_outdir[$i]}"
-  echo "sample output dir = ${output_dir[$i]}"
+  echo "sample output dir = ${output_dir}"
 
   submit_log="${output_dir}/${rglb}.cnvSeq_counts.submit.log"
   # Clear the log file
