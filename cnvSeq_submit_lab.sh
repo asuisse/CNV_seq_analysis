@@ -49,6 +49,11 @@ while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT
         continue
       fi
 
+      # Break the loop if we've reached the end of the file
+     if [ -z "$kdiidT" ] && [ -z "$kdiidC" ]; then
+        break
+      fi
+
       path_output_dir=${base_output_dir}/${rglbT}/CNV-Seq
       samples_cf=${path_output_dir}/"samples.cnvSeq."$rglbT
 
