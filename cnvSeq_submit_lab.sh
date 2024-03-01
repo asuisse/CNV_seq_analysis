@@ -16,6 +16,8 @@ path_cnv_seq="${folderpath}/cnv-seq"
 #declare -A paths_variables
 declare -A samples_files
 declare -A samples_outdir
+
+
 # IFS="="
 # while IFS="=" read -r p || [ -n "$p" ]
 # do
@@ -82,6 +84,11 @@ do
     echo $samples_cf
 
 done < ${samples_file}
+
+for i in "${!samples_files[@]}"; do
+    echo "Name: $i"
+    echo "Value: ${samples_files[$i]}"
+done
 
 # Check if the input file could be read successfully
 if [ $? -ne 0 ]; then
