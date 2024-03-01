@@ -17,9 +17,9 @@ path_bam_files="/data/users/asuisse/Analysis_DrosoWGS/nf-lohcator_nser/results/b
 #paths_for_nick_pipelines=/data/users/nrubanov/DrosoWGS/svn/analyse/data/scripts/#paths_for_nick_pipelines
 
 #Declare Associative Arrays allowing to associate keys with values, in pairs.
-#To set the keys and values, use code: samples_files["sample1"]="/path/to/sample1/file"
-#Values can then be accessed using the keys: echo "File for sample1: ${samples_files["sample1"]}"
-declare -A samples_files #DIFFERENT FROM samples_file variable made earlier
+#To set the keys and values, use code: samples_file_array["sample1"]="/path/to/sample1/file"
+#Values can then be accessed using the keys: echo "File for sample1: ${samples_file_array["sample1"]}"
+declare -A samples_file_array #DIFFERENT FROM samples_file variable made earlier
 declare -A samples_outdir
 
 # IFS="="
@@ -113,24 +113,24 @@ do
 # ?? is it even the right file format?
     echo -e ${bamfileid}'\t'${bamfile}'\t'${path_output_dir} > ${path_output_dir}/"samples.cnvSeq.counts."$rglb
 
-    samples_files[$rglb]=${path_output_dir}/"samples.cnvSeq.counts."$rglb
+    samples_file_array[$rglb]=${path_output_dir}/"samples.cnvSeq.counts."$rglb
     samples_outdir[$rglb]=${path_output_dir}
 
 done < ${samples_file}
 
-echo "samples_files array and samples_outdir array"
-echo "${samples_files[@]}"
+echo "samples_file_array array and samples_outdir array"
+echo "${samples_file_array[@]}"
 echo "${samples_outdir[@]}"
 
-for i in "${!samples_files[@]}"
+for i in "${!samples_file_array[@]}"
 do
   echo "i = ${i}"
   rglb="${i}"
 
-  sample_file="${samples_files[$i]}"
+  sample_file="${samples_file_array[$i]}"
   echo "sample file = ${sample_file}"
   output_dir="${samples_outdir[$i]}"
-  echo "sample output dir = ${output_dir}"
+  echo "sample output dir = ${output_dir[$i]}"
 
   submit_log="${output_dir}/${rglb}.cnvSeq_counts.submit.log"
 
