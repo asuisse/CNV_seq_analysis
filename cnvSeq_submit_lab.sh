@@ -116,6 +116,7 @@ do
   echo "${rglb}" >> "$submit_log"
 
   # Check if lines is 1, if not run the command for each line in the sample file
+  echo $lines
   if [[ $lines == 1 ]]; then
     CNVSEQ_big=$( qsub -V -v SAMPLES_FILE="${sample_file}",WINDOW=50000,PATH_CNV_SEQ="${path_cnv_seq}",PATH_CNV_SEQ_CUSTOM="${path_cnv_seq_custom}",PATH_OUTPUT_DIR="${path_output_dir}" -o "${path_output_dir}/log/${rglb}_cnvSeq_big.runlog" -j oe -N "${rglb}.cnvSeq_big" "$path_pbs_scripts/run_cnvSeq_big.pbs" ) || { echo "qsub command run_cnvSeq_big.pbs failed"; exit 1; }
     echo "$CNVSEQ_big"
