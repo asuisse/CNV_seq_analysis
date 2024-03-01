@@ -1,7 +1,9 @@
 #!/bin/bash
 
 #Rscript='/data/kdi_prod/project_result/948/01.00/Analysis/Analysis/CNV-Seq/script/cnv-seq.R'
-Rscript='/data/users/nrubanov/tools/cnv_seq_custom/cnv-seq.R'
+folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis
+
+Rscript="${folderpath}/cnv_seq_custom/cnv-seq.R"
 
 for file in $@;
 do

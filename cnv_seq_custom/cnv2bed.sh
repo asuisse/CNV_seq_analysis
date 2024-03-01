@@ -1,12 +1,10 @@
 #!/bin/bash
 
-cn2bed=/data/kdi_prod/project_result/948/01.00/Analysis/Analysis/CNV-Seq/script/CN2bed.py
-bed_sort=/data/kdi_prod/project_result/948/01.00/Analysis/Analysis/CNV-Seq/script/bed_sort.py
-cnv2gff=/data/kdi_prod/project_result/948/01.00/Analysis/Analysis/CNV-Seq/script/cnv2gff.pl
+folderpath=/data/users/asuisse/Analysis_DrosoWGS/CNV_seq_analysis
 
-cn2bed=/data/users/nrubanov/tools/cnv_seq_custom/CN2bed.py
-bed_sort=/data/users/nrubanov/tools/cnv_seq_custom/bed_sort.py
-cnv2gff=/data/users/nrubanov/tools/cnv_seq_custom/cnv2gff.pl
+cn2bed="${folderpath}/cnv_seq_custom/CN2bed.py"
+bed_sort="${folderpath}/cnv_seq_custom/bed_sort.py"
+cnv2gff="${folderpath}/cnv_seq_custom/cnv2gff.pl"
 
 
 for file in $@; do
