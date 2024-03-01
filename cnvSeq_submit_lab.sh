@@ -50,7 +50,7 @@ while true; do
         echo "End of file or error reading normal line"
         break
     fi
-       
+
     # Skip the loop iteration if kdiidT or kdiidC are empty or equal to "kdi_id"
     if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
       continue
@@ -67,6 +67,28 @@ while true; do
         exit 1
       fi
     fi
+done < ${samples_file}
+
+
+IFS=$'\t'
+
+while true; do
+    if ! IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT; then
+        echo "End of file or error reading tumour line"
+        break
+    fi
+    if ! IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC; then
+        echo "End of file or error reading normal line"
+        break
+    fi
+
+    # Skip the loop iteration if kdiidT or kdiidC are empty or equal to "kdi_id"
+    if [[ -z "$kdiidT"  ||  $kdiidT == "kdi_id" || -z "$kdiidC"  ||  $kdiidC == "kdi_id" ]]; then
+      continue
+    fi
+
+    path_output_dir=${base_output_dir}/${rglbT}/CNV-Seq
+    samples_cf=${path_output_dir}/"samples.cnvSeq."$rglbT
 
     tumour_id=$bamfileidT
     normal_id=$bamfileidC
@@ -95,7 +117,7 @@ while true; do
   
     samples_file_array[$rglbT]=${samples_cf}
     samples_outdir[$rglbT]=$path_output_dir
-    echo $samples_cf
+    echo "samples_cf file ${samples_cf}"
 
   for i in "${!samples_file_array[@]}"; do
     echo "Name: $i"
