@@ -63,9 +63,8 @@ while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT
         echo "Deleted existing output files from previous setup for ${kdiidT}"
      else
        echo "New file ${samples_cf}, nothing to remove"
-       exit 1
      fi
-     
+
     else
         echo "End of file reached or error reading normal line"
     fi
