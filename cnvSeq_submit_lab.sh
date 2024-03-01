@@ -32,6 +32,9 @@ declare -A samples_outdir
 #file_name_conversion=${paths_variables["file_name_conversion"]}
 #log=$path_output_dir
 
+# Set the Internal Field Separator (IFS) to a tab character
+IFS=$'\t'
+
 echo "Entering IFS"
 while IFS=$'\t' read -r kdiidT nameT idT rglbT kdi_folderT sexT typeT bamfileidT rleangthT && \
       IFS=$'\t' read -r kdiidC nameC idC rglbC kdifolderC sexC typeC bamfileidC rleangthC
@@ -76,6 +79,7 @@ do
 
     samples_files[$rglbT]=${samples_cf}
     samples_outdir[$rglbT]=$path_output_dir
+    echo $samples_cf
 
 done < ${samples_file}
 
@@ -99,6 +103,7 @@ do
   # Count number of lines in sample file
   nlines=$(wc -l < "$sample_file")
   lines=$((nlines + 0))
+  echo "${lines} lines counted in sample file"
 
   submit_log="${path_output_dir}/log/${rglb}_cnvSeq_submit.log"
   
