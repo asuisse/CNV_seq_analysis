@@ -53,7 +53,6 @@ do
       echo "Deleted existing output files from previous setup for ${kdiidT}"
     else
       echo "New file ${samples_cf}, nothing to remove"
-      exit 1
     fi
 
 done < "${samples_file}"
@@ -81,8 +80,6 @@ do
 
 # Construct the base output directory
     path_output_dir="${base_output_dir}${rglb}/CNV-Seq"
-
-    mkdir -p ${path_output_dir}
 
 # Create subdirectories if they don't exist
     if [[ ! -d $path_output_dir/hits ]]; then
