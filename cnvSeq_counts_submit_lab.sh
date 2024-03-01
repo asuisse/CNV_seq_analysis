@@ -80,6 +80,7 @@ do
 
 # Construct the base output directory
     path_output_dir="${base_output_dir}${rglb}/CNV-Seq"
+    mkdir -p ${path_output_dir}
 
 # Create subdirectories if they don't exist
     if [[ ! -d $path_output_dir/hits ]]; then
@@ -108,7 +109,7 @@ do
 
 # Add bam file information to samples.cnvSeq.counts. file
 # ?? is it even the right file format?
-    echo -e ${bamfileid}'\t'${bamfile}'\t'${path_output_dir} > ${path_output_dir}/"samples.cnvSeq.counts."$rglb
+    echo -e ${bamfileid}'\t'${bamfile}'\t'${path_output_dir} >> ${path_output_dir}/"samples.cnvSeq.counts."$rglb
 
     samples_file_array[$rglb]=${path_output_dir}/"samples.cnvSeq.counts."$rglb
     samples_outdir[$rglb]=${path_output_dir}
@@ -119,16 +120,13 @@ echo "samples_file_array array and samples_outdir array"
 echo "${samples_file_array[@]}"
 echo "${samples_outdir[@]}"
 
-echo "Content of samples_file_array"
-declare -p $samples_file_array
-
 # Loop through all sample files
 for i in "${!samples_file_array[@]}"
 do
   echo "i = ${i}"
   rglb="${i}"
   sample_file="${samples_file_array[$i]}"
-  echo "sample file = ${sample_file}"
+  echo "sample file = .${sample_file}"
   output_dir="${samples_outdir[$i]}"
   echo "sample output dir = ${output_dir}"
 
