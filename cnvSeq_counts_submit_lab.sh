@@ -119,36 +119,40 @@ echo "samples_file_array array and samples_outdir array"
 echo "${samples_file_array[@]}"
 echo "${samples_outdir[@]}"
 
+# Loop through all sample files
 for i in "${!samples_file_array[@]}"
 do
   echo "i = ${i}"
   rglb="${i}"
-
   sample_file="${samples_file_array[$i]}"
   echo "sample file = ${sample_file}"
   output_dir="${samples_outdir[$i]}"
   echo "sample output dir = ${output_dir[$i]}"
 
   submit_log="${output_dir}/${rglb}.cnvSeq_counts.submit.log"
+  # Clear the log file
+  > "$submit_log"
 
   if [[ -f $sample_file ]]; then
     nlines=$(wc -l < $sample_file)
   else
     echo "File not found: ${sample_file}"
-    continue
+    exit 1
   fi
 
   lines=$nlines
+  echo "${lines} lines counted in sample file"
 
-if [[ $lines == 1 ]]; then
- echo "entering lines = 1"
- qsub_command=("qsub" "-V" "-v" "SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom}" "-o" "${output_dir}/${rglb}.runlog" "-j" "oe" "-N" "${rglb}.getCounts" "$path_pbs_scripts/run_cnvSeq_counts.pbs")
-else
- echo "entering lines =/= 1"
- qsub_command=("qsub" "-V" "-t" "1-$lines" "-v" "SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom}" "-o" "${output_dir}/${rglb}.runlog" "-j" "oe" "-N" "${rglb}.getCounts" "$path_pbs_scripts/run_cnvSeq_counts.pbs")
-fi
-echo "${qsub_command[@]}" > $submit_log
-CNVSEQ=$("${qsub_command[@]}")
-echo "CNVSEQ = ${CNVSEQ}"
-echo "runlog = ${output_dir}/${rglb}.runlog"
+  if [[ $lines == 1 ]]; then
+    echo "Running qsub job for nlines = 1"
+    qsub_command=("qsub" "-V" "-v" "SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom}" "-o" "${output_dir}/${rglb}.runlog" "-j" "oe" "-N" "${rglb}.getCounts" "$path_pbs_scripts/run_cnvSeq_counts.pbs")
+  else
+    echo "Running qsub job for nlines =/= 1"
+    qsub_command=("qsub" "-V" "-t" "1-$lines" "-v" "SAMPLES_FILE=${sample_file},PATH_CNV_SEQ_CUSTOM=${path_cnv_seq_custom}" "-o" "${output_dir}/${rglb}.runlog" "-j" "oe" "-N" "${rglb}.getCounts" "$path_pbs_scripts/run_cnvSeq_counts.pbs")
+  fi
+
+  echo "${qsub_command[@]}" > $submit_log
+  CNVSEQ=$("${qsub_command[@]}")
+  echo "CNVSEQ = ${CNVSEQ}"
+  echo "runlog = ${output_dir}/${rglb}.runlog"
 done
