@@ -104,7 +104,7 @@ do
   nlines=$(wc -l < "$sample_file")
   lines=$((nlines + 0))
   echo "${lines} lines counted in sample file"
-
+  echo "${sample_file} sample file"
   submit_log="${path_output_dir}/log/${rglb}_cnvSeq_submit.log"
   
   # Clear the log file
@@ -133,3 +133,5 @@ do
   fi
 
 done
+
+
